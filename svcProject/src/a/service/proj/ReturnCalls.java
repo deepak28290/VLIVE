@@ -20,31 +20,33 @@ import javax.xml.bind.annotation.XmlRootElement;
 import org.apache.http.client.ClientProtocolException;
 import org.codehaus.jettison.json.JSONArray;
 
+import a.service.data.PotentialGuideResponse;
+import a.service.data.ResponseStatus;
 
 
-
-// Plain old Java Object it does not extend as class or implements 
-// an interface
-
-// The class registers its methods for the HTTP GET request using the @GET annotation. 
-// Using the @Produces annotation, it defines that it can deliver several MIME types,
-// text, XML and HTML. 
-
-// The browser requests per default the HTML MIME type.
-
-//Sets the path to base URL + /hello
 @XmlRootElement
 @Path("/volvolive")
 public class ReturnCalls {
-	 @GET
-	  @Path("/busList")
-	  @Produces(MediaType.APPLICATION_JSON)
-	  @Consumes(MediaType.APPLICATION_JSON)
-	  public String getAllBusesByBusNumb(@QueryParam(value = "busnum") String busnum) throws ClientProtocolException, IOException {
-			System.out.println(busnum);	
+	@GET
+	@Produces(MediaType.TEXT_PLAIN)
+	public String getVersion() {
+		return "Volvo Live 1.0";
+	}
+	
+	@GET
+	@Path("/nearestBus")
+	@Produces(MediaType.APPLICATION_JSON)
+	public PotentialGuideResponse getNearestBusesForLocation(@QueryParam(value = "busnum") String busNumber,
+			@QueryParam(value = "currentStop") String currentStop, @QueryParam(value = "destinationStop") String destinationStop){
 		
-			return busnum;
-	 }
+		try{
+			return BusServiceHelper.getAllNearestBuses(busNumber, currentStop,destinationStop);
+		}catch(Exception e){
+			PotentialGuideResponse response = new PotentialGuideResponse();
+			response.setResponseStatus(ResponseStatus.FAILURE);
+			return response;
+		}
+	}
 	 
 	 @GET
 	  @Path("/firstUser")
