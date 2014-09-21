@@ -5,7 +5,6 @@ import java.net.URL;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.List;
 import java.util.Set;
 
@@ -16,6 +15,7 @@ import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 import org.w3c.dom.NodeList;
 
+import a.service.data.DistanceType;
 import a.service.data.LocationDetails;
 import a.service.data.PotentialGuideResponse;
 import a.service.data.ResponseStatus;
@@ -65,11 +65,12 @@ public class BusServiceHelper{
 		
 		for(LocationDetails location: locationDetailsList){
 
-			Long directDistance = getDistance(location, fromLocation, toLocation,true);
-			if(directDistance != null){
-				Long viaWayPointDistance = getDistance(location, fromLocation, toLocation,false);
-				if( directDistance >= viaWayPointDistance){
-					location.setDistance(directDistance);
+			String travelParameters = getDistanceTime(location, fromLocation, toLocation,DistanceType.BUS_TO_DESTINATION);
+			if(travelParameters != null){
+				String secondSetParameters = getDistanceTime(location, fromLocation, toLocation,DistanceType.BUS_TO_DESTINATION_WAYPOINT);
+				if( getDistanceFromParameters(travelParameters) >= getDistanceFromParameters(secondSetParameters)){
+					String thirdSetParameters = getDistanceTime(location, fromLocation, toLocation, DistanceType.BUS_TO_CURRENT);
+					location.setDistanceParams(travelParameters + "|" + thirdSetParameters);
 					finalLocationDetails.add(location);
 				}
 			}			
@@ -79,18 +80,32 @@ public class BusServiceHelper{
 		return response;
 	}
 	
-	private static Long getDistance(LocationDetails busLocation, LocationDetails currentStop, LocationDetails destinationStop, boolean isDirect){
+	private static String getDistanceTime(LocationDetails busLocation, LocationDetails currentStop, LocationDetails destinationStop, DistanceType distanceType){
 
-		Long distance = null;
+		String distance = null;
+		String time = null;
 		String urlString = "";
-		if(isDirect){
+		switch(distanceType){
+			
+		case BUS_TO_DESTINATION: 
 			urlString = "http://maps.googleapis.com/maps/api/directions/xml?sensor=false&origin="+busLocation.getLatitude() + "+" +busLocation.getLongitude()
-					+"&destination="+destinationStop.getLatitude() + "+" + destinationStop.getLongitude();
-		}else{
+			+"&destination="+destinationStop.getLatitude() + "+" + destinationStop.getLongitude();
+			break;
+			
+		case BUS_TO_DESTINATION_WAYPOINT:
 			urlString = "http://maps.googleapis.com/maps/api/directions/xml?sensor=false&origin="+busLocation.getLatitude() + "+" +busLocation.getLongitude()
-					+"&destination="+destinationStop.getLatitude() + "+" + destinationStop.getLongitude() + "&waypoints=" +currentStop.getLatitude() + "+" + currentStop.getLongitude();
+			+"&destination="+destinationStop.getLatitude() + "+" + destinationStop.getLongitude() + "&waypoints=" +currentStop.getLatitude() + "+" + currentStop.getLongitude();
+			break;
+			
+		case BUS_TO_CURRENT:
+			urlString = "http://maps.googleapis.com/maps/api/directions/xml?sensor=false&origin="+busLocation.getLatitude() + "+" +busLocation.getLongitude()
+			+"&destination="+currentStop.getLatitude() + "+" + currentStop.getLongitude();
+			break;
+		
+		default:
+			break;
 		}
-
+		
 		try{
 			URL urlGoogleDirService = new URL(urlString);
 
@@ -116,7 +131,20 @@ public class BusServiceHelper{
 
 					if(n1 != null && n1.getLength() > 0) {
 						Element el = (Element)n1.item(0);
-						distance = getDistanceFromNode(el.getFirstChild().getNodeValue());
+						distance = el.getFirstChild().getNodeValue();
+					}
+				}
+			} 
+			
+			NodeList nodeListTime = docDir.getElementsByTagName("duration");
+			if(nodeListTime != null && nodeListTime.getLength() > 0){
+				Element element = (Element) nodeListTime.item(nodeList.getLength() - 1);
+				if(element != null){
+					NodeList n1 = element.getElementsByTagName("text");
+
+					if(n1 != null && n1.getLength() > 0) {
+						Element el = (Element)n1.item(0);
+						time = el.getFirstChild().getNodeValue();
 					}
 				}
 			} 
@@ -127,22 +155,18 @@ public class BusServiceHelper{
 			return null;
 		}
 
-		return distance;
+		return distance+ "+" + time;
 	}
 	
-	private static Long getDistanceFromNode(String nodeValue){
+	private static Long getDistanceFromParameters(String travelParameters){
+		
 		Long distance = null;
 		
-		if(nodeValue != null){			
-			try{
-				distance = (long) Double.parseDouble(Arrays.asList(nodeValue.split(" ")).get(0));
-			}catch(NumberFormatException e){
-				e.printStackTrace();
-			}
+		if(travelParameters != null){
+			distance = (long) Double.parseDouble(Arrays.asList(travelParameters.split(" ")).get(0));
 		}
 		return distance;
 	}
-	
 	private static Boolean getUpstreamValue(String currentStop,String destinationStop) throws SQLException{
 		Boolean upstream = null;
 
