@@ -43,7 +43,7 @@ public class DBConnectionHelper {
     	}
     	try{
     		Statement stmt = dbConn.createStatement();
-            String query = "SELECT * FROM volvo_table WHERE bus_num_req ='" +busNumber +  "' and upstream ='" +upstream +"';";
+            String query = "SELECT * FROM volvo_table WHERE bus_num_req ='" +busNumber +  "' and upstream ='" +upstream +"' and is_onboard='" + "1';";
             System.out.println(query);
             ResultSet rs = stmt.executeQuery(query);
             while(rs.next()){
