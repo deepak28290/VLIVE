@@ -4,8 +4,14 @@ public class LocationDetails {
 	
 	private Double latitude;
 	private Double longitude;
-	private Long distance;
+	private String distanceParams;
 	
+	public String getDistanceParams() {
+		return distanceParams;
+	}
+	public void setDistanceParams(String distanceParams) {
+		this.distanceParams = distanceParams;
+	}
 	public Double getLatitude() {
 		return latitude;
 	}
@@ -18,12 +24,5 @@ public class LocationDetails {
 	public void setLongitude(Double longitude) {
 		this.longitude = longitude;
 	}
-	public Long getDistance() {
-		return distance;
-	}
-	public void setDistance(Long distance) {
-		this.distance = distance;
-	}
-	
 	
 }
