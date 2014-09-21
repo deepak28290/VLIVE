@@ -3,10 +3,12 @@ package a.service.proj;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.ResultSet;
+import java.sql.SQLException;
 import java.sql.Statement;
 
 public class VolvoUtil {
 
+	public static String BUS_NUM_REQ="335E";
 	public static String isUpStream(String loc1,String loc2){
 		
 		 Connection connection = null;
@@ -105,8 +107,75 @@ public class VolvoUtil {
 		loc=lat+","+longt;
 		return loc;
 	}
-	public static void main(String[] args){
-		System.out.println(getCoordFromLoc("Majestic"));
+	public static void main(String[] args) throws SQLException{
+	//	System.out.println(getCoordFromLoc("Majestic"));
+		onBoard("12.9569472,77.7015352", "deepak12345");
+	}
+			
+	public static String onBoard(String currCoord,String userid) throws SQLException{
+		Connection connection = null;
+			Statement stmt = null;
+			String lat="";
+			String longt="";
+			String coord;
+			String sql = new String();
+			String bp="";
+		 try {
+				// the sql server driver string
+				Class.forName("com.mysql.jdbc.Driver");
+				
+				// the sql server url
+				String url = "jdbc:mysql://db4free.net:3306/volvolive";
+				
+				// get the sql server database connection
+				connection = DriverManager.getConnection(url, "deepak111", "deepak");
+				
+				stmt = connection.createStatement();
+				
+				System.out.println(sql);
+				sql="SELECT * from volvo_table WHERE user_id='"+userid+"'";
+				ResultSet rs=	stmt.executeQuery(sql);
+				if (rs.next()) {
+				bp=rs.getString("boarding_coord");
+				}
+				rs.close();
+				if(bp.equals(currCoord)){
+					
+					sql="SELECT * from volvo_table WHERE current_coord='"+currCoord+"' AND is_onboard='1'";
+					
+					rs=	stmt.executeQuery(sql);
+					while(rs.next()){
+						int i=0;
+						if(rs.getString("current_coord").equals(currCoord)&&rs.getString("bus_num_onb").equals(BUS_NUM_REQ)){
+							for(i=0;rs.getString("current_coord").equals(currCoord)&&rs.getString("bus_num_onb").equals(BUS_NUM_REQ)&&i<60;i++){
+								Thread.sleep(10000);
+							}
+							if(i==60){
+								i=0;
+								rs.close();
+								
+								sql="UPDATE volvo_table SET is_onboard='1',bus_numb_onboard WHERE user_id='"+userid+"'";
+								stmt.execute(sql);
+								stmt.close();
+								System.out.println("aaaa");
+								break;
+							}
+						}
+						
+					}
+						
+				
+				}else{
+					
+					stmt.close();
+				}
+				//String getSql2 = "INSERT INTO volvo_table VALUES('"+userid+"','"+boardingpoint+"','"+droppoint+"','100,100','120,120','"+busnumb+"','0',null)";
+		 }catch(Exception e){
+			 e.printStackTrace();
+			 stmt.close();
+		 }
+		
+		return null;
 	}
 	
 }
