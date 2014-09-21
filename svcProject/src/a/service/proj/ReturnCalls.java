@@ -4,6 +4,7 @@ import java.io.IOException;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.ResultSet;
+import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.HashMap;
 import java.util.List;
@@ -52,7 +53,7 @@ public class ReturnCalls {
 	  @Path("/firstUser")
 	  @Produces(MediaType.APPLICATION_JSON)
 	  @Consumes(MediaType.APPLICATION_JSON)
-	  public String crtUserData(@QueryParam(value = "userid") String userid,@QueryParam(value = "boardingpoint") String boardingpoint,@QueryParam(value = "droppoint") String droppoint,@QueryParam(value = "busnumb") String busnumb,@QueryParam(value = "currentcoord") String currentcoord) throws ClientProtocolException, IOException {
+	  public String crtUserData(@QueryParam(value = "userid") String userid,@QueryParam(value = "boardingpoint") String boardingpoint,@QueryParam(value = "droppoint") String droppoint,@QueryParam(value = "busnumb") String busnumb,@QueryParam(value = "currentcoord") String currentcoord) throws ClientProtocolException, IOException, SQLException {
 		String boardcoord;
 		String dropcoord;
 		boardcoord=VolvoUtil.getCoordFromLoc(boardingpoint);
@@ -71,20 +72,30 @@ public class ReturnCalls {
 				
 				// get the sql server database connection
 				connection = DriverManager.getConnection(url, "deepak111", "deepak");
-
+				String getSql;
 				stmt = connection.createStatement();
 				String up=VolvoUtil.isUpStream(boardingpoint, droppoint);
 				System.out.println(sql);
 				//String getSql = "INSERT INTO volvo_table VALUES('deepakId','Marathalli','Kadugodi','100,100','120,120','111,111','22E','0','','')";
-				String getSql = "INSERT INTO volvo_table VALUES('"+userid+"','"+boardingpoint+"','"+droppoint+"','"+boardcoord+"','"+dropcoord+"','"+currentcoord+"','"+busnumb+"','0',null,'"+up+"')";
+				sql="SELECT * from volvo_table WHERE user_id='"+userid+"'";
+				ResultSet rs=stmt.executeQuery(sql);
+				if(!rs.next()){
+				getSql = "INSERT INTO volvo_table VALUES('"+userid+"','"+boardingpoint+"','"+droppoint+"','"+boardcoord+"','"+dropcoord+"','"+currentcoord+"','"+busnumb+"','0',null,'"+up+"')";
 				System.out.println(getSql);
 				stmt.executeUpdate(getSql);
-				// STEP 5: Extract data from result set
-//				System.out.println(memcached.get(""));
 			
+				}else{
+					
+					getSql = "DELETE FROM volvo_table WHERE user_id='"+userid+"'";
+					stmt.execute(getSql);
+					getSql="INSERT INTO volvo_table VALUES('"+userid+"','"+boardingpoint+"','"+droppoint+"','"+boardcoord+"','"+dropcoord+"','"+currentcoord+"','"+busnumb+"','0',null,'"+up+"')";
+					stmt.execute(getSql);
+					stmt.close();
+				}
 						
 					}catch(Exception e){
 						e.printStackTrace();
+						stmt.close();
 						return "fail";
 					}
 		 System.out.println(userid);	
